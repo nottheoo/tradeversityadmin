@@ -106,25 +106,27 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 
 <script>
 // Supabase client
-const SUPABASE_URL = 'https://snsinlyovmsznmesbako.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_BvTrmek7JiIe0kb-wqaNKA_av2ipfk1';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(
+  'https://snsinlyovmsznmesbako.supabase.co', 
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuc2lubHlvdm1zem5tZXNiYWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTIxNTcsImV4cCI6MjA5NTg4ODE1N30.lMhqMRJ4gNyEqA8szRM46SbsOiamAJ9xPXp6UhVSi2g'
+);
 
 async function doAdminLogin(){
   const email = document.getElementById('admin-email').value.trim();
   const pw = document.getElementById('admin-pw').value;
   if(!email || !pw){ alert('Enter email and password'); return; }
   try{
-    const res = await supabaseClient.auth.signInWithPassword({email, password: pw});
-    if(res.error){ throw res.error; }
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    // load exports from Supabase
+    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
+    if(signInError){ throw signInError; }
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if(sessionError){ throw sessionError; }
+    if(!sessionData?.session){
+      throw new Error('Authentication did not complete. Please try again.');
+    }
+    showAdminApp();
     await loadAllExports();
-    // also show any pending exports queued via postMessage (optional)
     const pending = getPendingExports();
     if(pending && pending.length){
-      // show a notice and render the latest pending at top
       document.getElementById('stu-name').textContent = '(Pending) ' + (pending[pending.length-1].name||'Student');
       document.getElementById('stu-config').textContent = JSON.stringify((pending[pending.length-1].config||{}), null, 2);
       document.getElementById('stu-generatedAt').textContent = pending[pending.length-1].generatedAt || 'N/A';
@@ -140,14 +142,43 @@ function getPendingExports(){
 function setPendingExports(arr){ sessionStorage.setItem('pending_exports', JSON.stringify(arr||[])); }
 function clearPendingExports(){ sessionStorage.removeItem('pending_exports'); }
 function updatePendingBadge(){ const c = getPendingExports().length; document.getElementById('pending-count').textContent = c; }
-function logoutAdmin(){
+
+function showAdminApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+function showLogin(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
+}
+
+function logoutAdmin(){
+  showLogin();
   document.getElementById('admin-pw').value='';
 }
 
 // Initialize pending export badge when the page loads
 updatePendingBadge();
+
+async function initAuthState(){
+  try{
+    const { data, error } = await supabaseClient.auth.getSession();
+    if(error){ console.warn('Session check failed', error); showLogin(); return; }
+    if(data?.session){
+      showAdminApp();
+      await loadAllExports();
+    } else {
+      showLogin();
+    }
+  }catch(err){
+    console.warn('Session init error', err);
+    showLogin();
+  }
+}
+
+initAuthState();
+
 function handleFile(files){
   if(!files || !files.length) return;
   const f = files[0];
@@ -165,6 +196,11 @@ function handleFile(files){
 // Fetch all saved exports from Supabase and render them in the table
 async function loadAllExports(){
   try{
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if(sessionError){ throw sessionError; }
+    if(!sessionData?.session){
+      throw new Error('Not authenticated. Please sign in first.');
+    }
     const { data, error } = await supabaseClient.from('exports').select('*').order('created_at', { ascending: false });
     if(error) throw error;
     renderExports(data || []);
