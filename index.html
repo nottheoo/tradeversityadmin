@@ -85,11 +85,11 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
       </div>
       <div class="table-wrap">
         <table class="table" id="trades-table">
-          <thead>
-            <tr><th>Date</th><th>Asset</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Result</th><th>Notes</th></tr>
-          </thead>
-          <tbody id="trades-tbody"></tbody>
-        </table>
+                <thead>
+                  <tr><th>Date</th><th>Student</th><th>Trades</th><th>TPs</th><th>SLs</th><th>P&L</th><th>Win Rate</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="trades-tbody"></tbody>
+              </table>
       </div>
     </div>
 
@@ -216,15 +216,29 @@ function renderExports(list){
   const tbody = document.getElementById('trades-tbody'); tbody.innerHTML='';
   document.getElementById('stu-trade-count').textContent = (list.length||0) + ' exports';
   list.forEach((row, idx)=>{
-    const t = row.payload || {};
+    const payload = row.payload || {};
+    const studentName = row.student_name || payload.name || '';
+    const tradesArr = Array.isArray(payload.trades) ? payload.trades : [];
+    const tradesCount = tradesArr.length;
+    const parsePnl = s => {
+      const str = (s==null? '0' : String(s)).replace(/[+,]/g,'').replace(/[−–]/g,'-').trim();
+      return parseFloat(str) || 0;
+    };
+    const tps = tradesArr.filter(t=> parsePnl(t.pnl) > 0 ).length;
+    const sls = tradesArr.filter(t=> parsePnl(t.pnl) < 0 ).length;
+    const totalPnl = tradesArr.reduce((acc,t)=> acc + parsePnl(t.pnl), 0);
+    const winRate = tradesCount ? Math.round((tps / tradesCount) * 10000) / 100 : 0; // two decimals
+    const fmtPnl = n => (n>0?'+':'') + n.toFixed(2);
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date(row.created_at).toLocaleString()}</td>
-      <td>${row.student_name||t.name||''}</td>
-      <td>-</td>
-      <td>-</td>
-      <td>-</td>
-      <td>-</td>
+      <td>${studentName}</td>
+      <td>${tradesCount}</td>
+      <td>${tps}</td>
+      <td>${sls}</td>
+      <td>${fmtPnl(totalPnl)}</td>
+      <td>${winRate}%</td>
       <td class="small"><button onclick='viewExport(${idx})'>View</button> <button onclick='downloadExport(${idx})'>Download</button></td>
     `;
     tr._rowData = row;
@@ -237,8 +251,10 @@ function renderExports(list){
 function viewExport(i){
   const list = window.__exports_list||[]; if(!list[i]) return;
   const row = list[i];
-  document.getElementById('details-card').style.display='block';
-  document.getElementById('entry-details').textContent = JSON.stringify(row.payload, null, 2);
+  const d = row.payload;
+  if(!d) return;
+  renderStudent(d);
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function downloadExport(i){
