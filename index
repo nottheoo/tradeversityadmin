@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin — Tradeversity</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Supabase client (UMD) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#050508;--bg2:#0a0a0f;--card:#0f1116;--text:#f0f0f5;--muted:#9a9aa8;--accent:#00f2ff}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:DM Mono,monospace}
+.container{max-width:1100px;margin:28px auto;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.h-title{font-family:Syne,system-ui;font-weight:800;font-size:20px}
+.card{background:var(--bg2);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px}
+.login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
+.login-box{background:var(--card);padding:24px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);width:360px;text-align:center}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);margin-bottom:10px}
+.btn{background:var(--accent);color:#000;padding:10px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px}
+.table-wrap{margin-top:14px;overflow:auto}
+.table{width:100%;border-collapse:collapse}
+.table th, .table td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.note{white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div style="font-family:Syne;font-size:18px;font-weight:800;margin-bottom:8px">Admin Login</div>
+    <div class="small" style="margin-bottom:12px">Sign in with your admin email and password</div>
+    <input id="admin-email" class="input" type="email" placeholder="Admin email (you created in Supabase)" />
+    <input id="admin-pw" class="input" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <button class="btn" onclick="doAdminLogin()">Sign In</button>
+    <div style="margin-top:12px" class="small">Create an admin user in Supabase Auth and add their `user_id` to the `admins` table.</div>
+    <div style="margin-top:8px" class="small">Pending exports: <span id="pending-count">0</span></div>
+  </div>
+</div>
+
+<div class="container" id="app" style="display:none">
+  <div class="header">
+    <div>
+      <div class="h-title">Admin Dashboard</div>
+      <div class="small">Import a student's JSON export to review trades and stats</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="file-input" type="file" accept="application/json" style="display:none" onchange="handleFile(this.files)">
+      <button class="btn" onclick="document.getElementById('file-input').click()">Import Student JSON</button>
+      <button class="btn" onclick="logoutAdmin()" style="background:transparent;color:var(--accent);border:1px solid rgba(0,242,255,0.12)">Logout</button>
+    </div>
+  </div>
+
+  <div id="student-area" style="display:none">
+    <div class="card" id="student-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div id="stu-name" style="font-family:Syne;font-weight:700;font-size:18px">Student Name</div>
+        <div id="stu-meta" class="small">Imported on —</div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Account</div>
+        <div id="stu-account" style="font-family:Syne;font-weight:700;font-size:16px">$0</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="small">Config</div>
+        <div id="stu-config" class="note">—</div>
+      </div>
+      <div class="card">
+        <div class="small">Summary Stats</div>
+        <div id="stu-stats" class="stats-grid"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="small">Trade Journal — <span id="stu-trade-count">0 trades</span></div>
+        <div class="small">Imported: <span id="stu-generatedAt">—</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="trades-table">
+          <thead>
+            <tr><th>Date</th><th>Asset</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Result</th><th>Notes</th></tr>
+          </thead>
+          <tbody id="trades-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="details-card" style="margin-top:12px;display:none">
+      <div class="small">Selected Entry Details</div>
+      <div id="entry-details" class="note"></div>
+    </div>
+  </div>
+
+  <div id="empty" class="card" style="margin-top:12px">
+    No student file imported. Use "Import Student JSON" to begin.
+  </div>
+</div>
+
+<script>
+// Supabase client
+const SUPABASE_URL = 'https://snsinlyovmsznmesbako.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_BvTrmek7JiIe0kb-wqaNKA_av2ipfk1';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function doAdminLogin(){
+  const email = document.getElementById('admin-email').value.trim();
+  const pw = document.getElementById('admin-pw').value;
+  if(!email || !pw){ alert('Enter email and password'); return; }
+  try{
+    const res = await supabaseClient.auth.signInWithPassword({email, password: pw});
+    if(res.error){ throw res.error; }
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    // load exports from Supabase
+    await loadAllExports();
+    // also show any pending exports queued via postMessage (optional)
+    const pending = getPendingExports();
+    if(pending && pending.length){
+      // show a notice and render the latest pending at top
+      document.getElementById('stu-name').textContent = '(Pending) ' + (pending[pending.length-1].name||'Student');
+      document.getElementById('stu-config').textContent = JSON.stringify((pending[pending.length-1].config||{}), null, 2);
+      document.getElementById('stu-generatedAt').textContent = pending[pending.length-1].generatedAt || 'N/A';
+    }
+  }catch(err){
+    alert('Login failed: '+(err.message||err));
+  }
+}
+
+function getPendingExports(){
+  try{ return JSON.parse(sessionStorage.getItem('pending_exports')||'[]'); }catch(e){return[]}
+}
+function setPendingExports(arr){ sessionStorage.setItem('pending_exports', JSON.stringify(arr||[])); }
+function clearPendingExports(){ sessionStorage.removeItem('pending_exports'); }
+function updatePendingBadge(){ const c = getPendingExports().length; document.getElementById('pending-count').textContent = c; }
+function logoutAdmin(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('admin-pw').value='';
+}
+
+// Initialize pending export badge when the page loads
+updatePendingBadge();
+function handleFile(files){
+  if(!files || !files.length) return;
+  const f = files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      renderStudent(data);
+    }catch(err){
+      alert('Invalid JSON file: '+err.message);
+    }
+  };
+  reader.readAsText(f);
+}
+// Fetch all saved exports from Supabase and render them in the table
+async function loadAllExports(){
+  try{
+    const { data, error } = await supabaseClient.from('exports').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    renderExports(data || []);
+  }catch(err){
+    console.error('Failed to load exports:', err);
+    alert('Failed to load exports: '+(err.message||err));
+  }
+}
+
+function renderExports(list){
+  document.getElementById('student-area').style.display='block';
+  document.getElementById('empty').style.display='none';
+  const tbody = document.getElementById('trades-tbody'); tbody.innerHTML='';
+  document.getElementById('stu-trade-count').textContent = (list.length||0) + ' exports';
+  list.forEach((row, idx)=>{
+    const t = row.payload || {};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date(row.created_at).toLocaleString()}</td>
+      <td>${row.student_name||t.name||''}</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td class="small"><button onclick='viewExport(${idx})'>View</button> <button onclick='downloadExport(${idx})'>Download</button></td>
+    `;
+    tr._rowData = row;
+    tbody.appendChild(tr);
+  });
+  // store list for view/download
+  window.__exports_list = list;
+}
+
+function viewExport(i){
+  const list = window.__exports_list||[]; if(!list[i]) return;
+  const row = list[i];
+  document.getElementById('details-card').style.display='block';
+  document.getElementById('entry-details').textContent = JSON.stringify(row.payload, null, 2);
+}
+
+function downloadExport(i){
+  const list = window.__exports_list||[]; if(!list[i]) return;
+  const row = list[i];
+  const name = (row.student_name||'student') + '_' + new Date(row.created_at).toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
+  const blob = new Blob([JSON.stringify(row.payload,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+function renderStudent(d){
+  document.getElementById('student-area').style.display='block';
+  document.getElementById('empty').style.display='none';
+  document.getElementById('stu-name').textContent = d.name || 'Unknown';
+  document.getElementById('stu-generatedAt').textContent = d.generatedAt || 'N/A';
+  const cfgEl = document.getElementById('stu-config');
+  cfgEl.textContent = JSON.stringify(d.config||{}, null, 2);
+  document.getElementById('stu-account').textContent = (d.config && d.config.accountSize) ? '$'+Number(d.config.accountSize).toFixed(2) : '$0';
+
+  // Render stats
+  const stats = d.stats || {};
+  const statsGrid = document.getElementById('stu-stats');
+  statsGrid.innerHTML='';
+  Object.entries(stats).forEach(([k,v])=>{
+    const el = document.createElement('div'); el.className='stat';
+    el.innerHTML = `<div class="small">${k}</div><div style="font-family:Syne;font-weight:700;margin-top:6px">${v}</div>`;
+    statsGrid.appendChild(el);
+  });
+
+  // Render trades
+  const trades = Array.isArray(d.trades)?d.trades:[];
+  document.getElementById('stu-trade-count').textContent = trades.length + ' trades';
+  const tbody = document.getElementById('trades-tbody'); tbody.innerHTML='';
+  trades.forEach((t,idx)=>{
+    const tr = document.createElement('tr');
+    const notes = [t.entryReason||'', t.exitReason||'', t.mistakes||'', t.lessons||''].filter(Boolean).join('\n---\n');
+    tr.innerHTML = `
+      <td>${t.date||''}</td>
+      <td>${t.asset||''}</td>
+      <td>${t.entry||''}</td>
+      <td>${t.exit||''}</td>
+      <td>${t.pnl!=null?t.pnl:''}</td>
+      <td>${t.result||''}</td>
+      <td class="small">${(notes.length>100)?notes.slice(0,100)+'...':notes}</td>
+    `;
+    tr.style.cursor='pointer';
+    tr.onclick = ()=>{
+      document.getElementById('details-card').style.display='block';
+      document.getElementById('entry-details').textContent = 
+        'Asset: '+(t.asset||'')+'\nDate: '+(t.date||'')+' '+(t.time||'')+'\nP&L: '+(t.pnl!=null?t.pnl:'')+'\n\nEntry Reason:\n'+(t.entryReason||'')+'\n\nExit Reason:\n'+(t.exitReason||'')+'\n\nMistakes:\n'+(t.mistakes||'')+'\n\nLessons:\n'+(t.lessons||'');
+      window.scrollTo({top:document.getElementById('details-card').offsetTop-20,behavior:'smooth'});
+    };
+    tbody.appendChild(tr);
+  });
+}
+// Accept student exports via postMessage
+window.addEventListener('message', function(e){
+  try{
+    const msg = e.data;
+    if(!msg || msg.type!=='student_export') return;
+    // Queue payload in sessionStorage; do NOT auto-render until admin logs in
+    const pending = getPendingExports();
+    pending.push(msg.payload);
+    setPendingExports(pending);
+    updatePendingBadge();
+    // send ack back to sender
+    try{ e.source.postMessage({type:'student_export_ack'}, e.origin); }catch(err){}
+  }catch(err){
+    // ignore
+  }
+}, false);
+
+// init pending badge on load
+updatePendingBadge();
+</script>
+</body>
+</html>
