@@ -5,329 +5,677 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Admin — Tradeversity</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<!-- Supabase client (UMD) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-:root{--bg:#050508;--bg2:#0a0a0f;--card:#0f1116;--text:#f0f0f5;--muted:#9a9aa8;--accent:#00f2ff}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:DM Mono,monospace}
-.container{max-width:1100px;margin:28px auto;padding:20px}
-.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.h-title{font-family:Syne,system-ui;font-weight:800;font-size:20px}
-.card{background:var(--bg2);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px}
-.login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
-.login-box{background:var(--card);padding:24px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);width:360px;text-align:center}
-.input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);margin-bottom:10px}
-.btn{background:var(--accent);color:#000;padding:10px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-.stat{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px}
-.table-wrap{margin-top:14px;overflow:auto}
-.table{width:100%;border-collapse:collapse}
-.table th, .table td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
-.small{font-size:12px;color:var(--muted)}
-.note{white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:8px}
+:root{
+  --bg:#050508;--bg2:#0a0a0f;--card:#0f1116;
+  --text:#f0f0f5;--muted:#9a9aa8;
+  --accent:#00f2ff;--accent-rgb:0,242,255;
+  --green:#00e676;--red:#ff4757;--yellow:#ffc847;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,242,255,0.2);border-radius:99px}
+
+/* ── LAYOUT ── */
+.container{max-width:1200px;margin:0 auto;padding:28px 24px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px;flex-wrap:wrap}
+.h-title{font-family:Syne,system-ui;font-weight:800;font-size:26px;background:linear-gradient(135deg,#00f2ff,#0088ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.h-sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* ── CARDS ── */
+.card{background:linear-gradient(135deg,rgba(10,10,15,0.9),rgba(15,17,22,0.7));border:1px solid rgba(0,242,255,0.08);border-radius:14px;padding:20px;backdrop-filter:blur(10px)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--accent),#00a8cc);color:#000;padding:9px 14px;border-radius:9px;border:none;cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;transition:all 0.2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,242,255,0.25)}
+.btn:active{transform:translateY(0)}
+.btn-ghost{background:rgba(0,242,255,0.06);color:var(--accent);border:1px solid rgba(0,242,255,0.18)}
+.btn-ghost:hover{background:rgba(0,242,255,0.12)}
+.btn-warn{background:linear-gradient(135deg,rgba(255,181,71,0.15),rgba(255,181,71,0.08));color:#ffb547;border:1px solid rgba(255,181,71,0.25)}
+.btn-warn:hover{background:rgba(255,181,71,0.2)}
+.btn-danger{background:linear-gradient(135deg,rgba(255,71,87,0.15),rgba(255,71,87,0.08));color:#ff4757;border:1px solid rgba(255,71,87,0.25)}
+.btn-danger:hover{background:rgba(255,71,87,0.2)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:7px}
+
+/* ── INPUTS ── */
+.input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(0,242,255,0.12);background:rgba(255,255,255,0.02);color:var(--text);font-size:13px;font-family:inherit;transition:all 0.25s;outline:none}
+.input:focus{border-color:rgba(0,242,255,0.4);background:rgba(0,242,255,0.04);box-shadow:0 0 0 3px rgba(0,242,255,0.08)}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:9999;backdrop-filter:blur(8px)}
+.login-box{background:linear-gradient(145deg,rgba(15,17,22,0.95),rgba(10,10,15,0.95));padding:36px;border-radius:18px;border:1px solid rgba(0,242,255,0.1);width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6),0 0 0 1px rgba(0,242,255,0.05)}
+.login-box .logo{font-family:Syne;font-size:20px;font-weight:800;background:linear-gradient(135deg,#00f2ff,#0088ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+
+/* ── TABLE ── */
+.table-wrap{overflow:auto;border-radius:10px;border:1px solid rgba(0,242,255,0.07)}
+.table{width:100%;border-collapse:collapse;min-width:720px}
+.table thead{background:linear-gradient(135deg,rgba(0,242,255,0.07),rgba(0,168,204,0.03))}
+.table th{padding:11px 14px;text-align:left;border-bottom:1px solid rgba(0,242,255,0.1);font-size:11px;font-weight:700;color:#00f2ff;text-transform:uppercase;letter-spacing:0.6px;white-space:nowrap}
+.table td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12.5px;vertical-align:middle}
+.table tbody tr{transition:background 0.15s;cursor:pointer}
+.table tbody tr:hover{background:rgba(0,242,255,0.04)}
+.table tbody tr:last-child td{border-bottom:none}
+
+/* ── STUDENT NAME CLICKABLE ── */
+.stu-name-cell{color:var(--accent);font-weight:600;cursor:pointer;position:relative;display:inline-block}
+.stu-name-cell:hover{text-decoration:underline}
+
+/* ── INFO TOOLTIP POPUP ── */
+.info-tooltip{position:fixed;z-index:8000;background:linear-gradient(135deg,rgba(10,10,18,0.98),rgba(5,5,10,0.98));border:1px solid rgba(0,242,255,0.2);border-radius:12px;padding:16px;min-width:260px;max-width:320px;box-shadow:0 16px 48px rgba(0,0,0,0.7),0 0 0 1px rgba(0,242,255,0.05);pointer-events:none;opacity:0;transform:translateY(6px) scale(0.97);transition:opacity 0.18s,transform 0.18s}
+.info-tooltip.visible{opacity:1;transform:translateY(0) scale(1)}
+.info-tooltip-title{font-family:Syne;font-weight:700;font-size:15px;margin-bottom:10px;color:var(--accent)}
+.info-tooltip-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.info-tooltip-row:last-child{border-bottom:none}
+.info-tooltip-row .lbl{color:var(--muted)}
+.info-tooltip-row .val{font-weight:600;color:var(--text)}
+
+/* ── MODAL (trade detail / student view) ── */
+.modal-overlay{position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.22s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:linear-gradient(145deg,rgba(12,12,18,0.98),rgba(8,8,14,0.98));border:1px solid rgba(0,242,255,0.1);border-radius:18px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.8);transform:translateY(20px) scale(0.98);transition:transform 0.25s}
+.modal-overlay.open .modal-box{transform:translateY(0) scale(1)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(0,242,255,0.08);flex-shrink:0}
+.modal-title{font-family:Syne;font-weight:800;font-size:18px}
+.modal-close{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.modal-close:hover{background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.3);color:#ff4757}
+.modal-body{overflow:auto;padding:22px;flex:1}
+
+/* Student modal size */
+.modal-box.modal-lg{max-width:900px}
+/* Trade detail modal size */
+.modal-box.modal-md{max-width:580px}
+
+/* ── METRIC CARDS ── */
+.metrics-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.metric-card{background:linear-gradient(135deg,rgba(0,242,255,0.07),rgba(0,168,204,0.03));border:1px solid rgba(0,242,255,0.1);border-radius:11px;padding:16px 18px;flex:1;min-width:130px}
+.metric-label{font-size:10px;text-transform:uppercase;color:var(--accent);letter-spacing:0.6px;font-weight:700;margin-bottom:8px}
+.metric-value{font-family:Syne,system-ui;font-weight:800;font-size:22px;line-height:1}
+
+/* ── CONFIG GRID ── */
+.config-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.config-item{background:rgba(0,242,255,0.03);border:1px solid rgba(0,242,255,0.06);padding:10px 12px;border-radius:8px}
+.config-label{font-size:10px;text-transform:uppercase;color:var(--accent);letter-spacing:0.5px;font-weight:700;margin-bottom:4px}
+.config-value{font-size:12.5px;color:var(--text);word-break:break-word}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:rgba(0,242,255,0.04);border:1px solid rgba(0,242,255,0.07);padding:12px;border-radius:9px}
+.stat .slbl{font-size:11px;color:var(--muted)}
+.stat .sval{font-family:Syne;font-weight:700;font-size:14px;margin-top:5px}
+
+/* ── SECTION TITLE ── */
+.section-title{font-size:11px;text-transform:uppercase;color:var(--accent);letter-spacing:0.6px;font-weight:700;margin-bottom:12px}
+
+/* ── TRADE DETAIL ── */
+.detail-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.detail-chip{background:rgba(0,242,255,0.05);border:1px solid rgba(0,242,255,0.1);border-radius:8px;padding:8px 12px;flex:1;min-width:120px}
+.detail-chip .dlbl{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px;margin-bottom:3px}
+.detail-chip .dval{font-size:14px;font-weight:600}
+.detail-note{background:rgba(255,200,71,0.05);border:1px solid rgba(255,200,71,0.1);border-radius:9px;padding:12px 14px;margin-top:10px}
+.detail-note .nlbl{font-size:10px;text-transform:uppercase;color:var(--yellow);letter-spacing:0.5px;font-weight:700;margin-bottom:6px}
+.detail-note .ntxt{font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.6}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:99999;background:rgba(10,10,18,0.95);border:1px solid rgba(0,242,255,0.2);color:var(--text);padding:12px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+#toast.show{opacity:1}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border-radius:99px;font-size:10px;font-weight:700;padding:2px 7px;line-height:1.4}
+
+/* ── PNL COLOR ── */
+.pos{color:var(--green)}
+.neg{color:var(--red)}
+.neu{color:var(--muted)}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:60px 24px;color:var(--muted)}
+.empty-state .icon{font-size:36px;margin-bottom:14px;opacity:0.5}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .config-grid,.stats-grid{grid-template-columns:1fr 1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .metrics-row{gap:8px}
+  .modal-box.modal-lg{max-width:100%}
+}
+@media(max-width:480px){
+  .config-grid,.stats-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- INFO TOOLTIP -->
+<div class="info-tooltip" id="info-tooltip"></div>
+
+<!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
-    <div style="font-family:Syne;font-size:18px;font-weight:800;margin-bottom:8px">Admin Login</div>
-    <div class="small" style="margin-bottom:12px">Sign in with your admin email and password</div>
-    <input id="admin-email" class="input" type="email" placeholder="Admin email (you created in Supabase)" />
-    <input id="admin-pw" class="input" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()">
-    <button class="btn" onclick="doAdminLogin()">Sign In</button>
-    <div style="margin-top:12px" class="small">Create an admin user in Supabase Auth and add their `user_id` to the `admins` table.</div>
-    <div style="margin-top:8px" class="small">Pending exports: <span id="pending-count">0</span></div>
+    <div class="logo">Tradeversity</div>
+    <div style="font-family:Syne;font-size:16px;font-weight:700;margin-bottom:6px">Admin Panel</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px">Sign in with your admin credentials</div>
+    <input id="admin-email" class="input" type="email" placeholder="Admin email" style="margin-bottom:10px"/>
+    <input id="admin-pw" class="input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doAdminLogin()" style="margin-bottom:14px"/>
+    <button class="btn" style="width:100%;justify-content:center" onclick="doAdminLogin()">Sign In →</button>
+    <div style="margin-top:14px;font-size:11px;color:var(--muted)">Pending exports: <span id="pending-count" class="badge">0</span></div>
   </div>
 </div>
 
+<!-- MAIN APP -->
 <div class="container" id="app" style="display:none">
   <div class="header">
     <div>
       <div class="h-title">Admin Dashboard</div>
-      <div class="small">Import a student's JSON export to review trades and stats</div>
+      <div class="h-sub">Review and manage student trading data</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input id="file-input" type="file" accept="application/json" style="display:none" onchange="handleFile(this.files)">
-      <button class="btn" onclick="document.getElementById('file-input').click()">Import Student JSON</button>
-      <button class="btn" onclick="logoutAdmin()" style="background:transparent;color:var(--accent);border:1px solid rgba(0,242,255,0.12)">Logout</button>
+      <button class="btn" onclick="document.getElementById('file-input').click()">+ Import JSON</button>
+      <button class="btn btn-warn" onclick="clearLocalData()">Clear Local</button>
+      <button class="btn btn-danger" onclick="resetAllData()">Reset All</button>
+      <button class="btn btn-ghost" onclick="logoutAdmin()">Logout</button>
     </div>
   </div>
 
-  <div id="student-area" style="display:none">
-    <div class="card" id="student-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <!-- EXPORTS TABLE -->
+  <div class="card" id="exports-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">Student Exports</div>
+      <span id="exports-count" style="font-size:12px;color:var(--muted)">0 records</span>
+    </div>
+    <div class="table-wrap" id="exports-table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Trades</th>
+            <th>TPs</th>
+            <th>SLs</th>
+            <th>BEs</th>
+            <th>P&L</th>
+            <th>Win Rate</th>
+            <th style="width:130px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="exports-tbody"></tbody>
+      </table>
+    </div>
+    <div id="empty-state" class="empty-state">
+      <div class="icon">📊</div>
+      <div style="font-family:Syne;font-weight:700;font-size:16px;margin-bottom:8px">No data yet</div>
+      <div style="font-size:13px">Import a student JSON file or wait for submissions</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STUDENT MODAL ══ -->
+<div class="modal-overlay" id="student-modal" onclick="if(event.target===this)closeStudentModal()">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
       <div>
-        <div id="stu-name" style="font-family:Syne;font-weight:700;font-size:18px">Student Name</div>
-        <div id="stu-meta" class="small">Imported on —</div>
+        <div class="modal-title" id="sm-name">Student</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px" id="sm-meta">—</div>
       </div>
-      <div style="text-align:right">
-        <div class="small">Account</div>
-        <div id="stu-account" style="font-family:Syne;font-weight:700;font-size:16px">$0</div>
-      </div>
+      <button class="modal-close" onclick="closeStudentModal()">✕</button>
     </div>
+    <div class="modal-body">
+      <!-- Metrics -->
+      <div class="metrics-row" id="sm-metrics"></div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="small">Config</div>
-        <div id="stu-config" class="note">—</div>
+      <!-- Config + Stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px" id="sm-config-stats-grid">
+        <div>
+          <div class="section-title">Trading Config</div>
+          <div class="config-grid" id="sm-config"></div>
+        </div>
+        <div>
+          <div class="section-title">Summary Stats</div>
+          <div class="stats-grid" id="sm-stats"></div>
+        </div>
       </div>
-      <div class="card">
-        <div class="small">Summary Stats</div>
-        <div id="stu-stats" class="stats-grid"></div>
-      </div>
-    </div>
 
-    <div class="card" style="margin-top:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="small">Trade Journal — <span id="stu-trade-count">0 trades</span></div>
-        <div class="small">Imported: <span id="stu-generatedAt">—</span></div>
-      </div>
+      <!-- Trade journal -->
+      <div class="section-title">Trade Journal <span id="sm-trade-count" style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;font-size:11px"></span></div>
       <div class="table-wrap">
-        <table class="table" id="trades-table">
-                <thead>
-                  <tr><th>Date</th><th>Student</th><th>Trades</th><th>TPs</th><th>SLs</th><th>P&L</th><th>Win Rate</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="trades-tbody"></tbody>
-              </table>
+        <table class="table">
+          <thead>
+            <tr><th>Date</th><th>Asset</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Result</th><th>Notes</th></tr>
+          </thead>
+          <tbody id="sm-trades-tbody"></tbody>
+        </table>
       </div>
-    </div>
-
-    <div class="card" id="details-card" style="margin-top:12px;display:none">
-      <div class="small">Selected Entry Details</div>
-      <div id="entry-details" class="note"></div>
     </div>
   </div>
+</div>
 
-  <div id="empty" class="card" style="margin-top:12px">
-    No student file imported. Use "Import Student JSON" to begin.
+<!-- ══ TRADE DETAIL MODAL ══ -->
+<div class="modal-overlay" id="trade-modal" onclick="if(event.target===this)closeTradeModal()">
+  <div class="modal-box modal-md">
+    <div class="modal-header">
+      <div class="modal-title">Trade Details</div>
+      <button class="modal-close" onclick="closeTradeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="trade-modal-body"></div>
   </div>
 </div>
 
 <script>
-// Supabase client
+/* ═══════════════════════════════════════
+   SUPABASE
+═══════════════════════════════════════ */
 const supabaseClient = supabase.createClient(
-  'https://snsinlyovmsznmesbako.supabase.co', 
+  'https://snsinlyovmsznmesbako.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuc2lubHlvdm1zem5tZXNiYWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTIxNTcsImV4cCI6MjA5NTg4ODE1N30.lMhqMRJ4gNyEqA8szRM46SbsOiamAJ9xPXp6UhVSi2g'
 );
 
-async function doAdminLogin(){
-  const email = document.getElementById('admin-email').value.trim();
-  const pw = document.getElementById('admin-pw').value;
-  if(!email || !pw){ alert('Enter email and password'); return; }
-  try{
-    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
-    if(signInError){ throw signInError; }
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    if(sessionError){ throw sessionError; }
-    if(!sessionData?.session){
-      throw new Error('Authentication did not complete. Please try again.');
-    }
-    showAdminApp();
-    await loadAllExports();
-    const pending = getPendingExports();
-    if(pending && pending.length){
-      document.getElementById('stu-name').textContent = '(Pending) ' + (pending[pending.length-1].name||'Student');
-      document.getElementById('stu-config').textContent = JSON.stringify((pending[pending.length-1].config||{}), null, 2);
-      document.getElementById('stu-generatedAt').textContent = pending[pending.length-1].generatedAt || 'N/A';
-    }
-  }catch(err){
-    alert('Login failed: '+(err.message||err));
-  }
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
+function parsePnl(s){
+  const str=(s==null?'0':String(s)).replace(/[+,]/g,'').replace(/[−–\u2212\u2013]/g,'-').trim();
+  return parseFloat(str)||0;
+}
+function fmtPnl(n){return(n>=0?'+':'')+n.toFixed(2)}
+function pnlClass(n){return n>0?'pos':n<0?'neg':'neu'}
+
+let _toastTimer;
+function toast(msg,color='#00f2ff'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.borderColor=color+'44';
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
 }
 
-function getPendingExports(){
-  try{ return JSON.parse(sessionStorage.getItem('pending_exports')||'[]'); }catch(e){return[]}
+/* ═══════════════════════════════════════
+   AUTH
+═══════════════════════════════════════ */
+function getPendingExports(){try{return JSON.parse(sessionStorage.getItem('pending_exports')||'[]')}catch(e){return[]}}
+function setPendingExports(a){sessionStorage.setItem('pending_exports',JSON.stringify(a||[]))}
+function clearPendingExports(){sessionStorage.removeItem('pending_exports')}
+function updatePendingBadge(){document.getElementById('pending-count').textContent=getPendingExports().length}
+
+async function doAdminLogin(){
+  const email=document.getElementById('admin-email').value.trim();
+  const pw=document.getElementById('admin-pw').value;
+  if(!email||!pw){alert('Enter email and password');return}
+  try{
+    const {error}=await supabaseClient.auth.signInWithPassword({email,password:pw});
+    if(error) throw error;
+    showAdminApp();
+    await loadAllExports();
+  }catch(err){alert('Login failed: '+(err.message||err))}
 }
-function setPendingExports(arr){ sessionStorage.setItem('pending_exports', JSON.stringify(arr||[])); }
-function clearPendingExports(){ sessionStorage.removeItem('pending_exports'); }
-function updatePendingBadge(){ const c = getPendingExports().length; document.getElementById('pending-count').textContent = c; }
 
 function showAdminApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
 }
-
 function showLogin(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
-
-function logoutAdmin(){
-  showLogin();
-  document.getElementById('admin-pw').value='';
-}
-
-// Initialize pending export badge when the page loads
-updatePendingBadge();
+function logoutAdmin(){showLogin();document.getElementById('admin-pw').value=''}
 
 async function initAuthState(){
   try{
-    const { data, error } = await supabaseClient.auth.getSession();
-    if(error){ console.warn('Session check failed', error); showLogin(); return; }
-    if(data?.session){
-      showAdminApp();
-      await loadAllExports();
-    } else {
-      showLogin();
-    }
-  }catch(err){
-    console.warn('Session init error', err);
-    showLogin();
-  }
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error||!data?.session){showLogin();return}
+    showAdminApp();
+    await loadAllExports();
+  }catch{showLogin()}
 }
-
 initAuthState();
+updatePendingBadge();
 
+/* ═══════════════════════════════════════
+   IMPORT / FILE
+═══════════════════════════════════════ */
 function handleFile(files){
-  if(!files || !files.length) return;
-  const f = files[0];
-  const reader = new FileReader();
-  reader.onload = function(e){
+  if(!files||!files.length) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
     try{
-      const data = JSON.parse(e.target.result);
-      renderStudent(data);
-    }catch(err){
-      alert('Invalid JSON file: '+err.message);
-    }
+      const data=JSON.parse(e.target.result);
+      openStudentModal(data);
+    }catch(err){alert('Invalid JSON: '+err.message)}
   };
-  reader.readAsText(f);
+  reader.readAsText(files[0]);
 }
-// Fetch all saved exports from Supabase and render them in the table
+
+/* ═══════════════════════════════════════
+   LOAD EXPORTS
+═══════════════════════════════════════ */
 async function loadAllExports(){
   try{
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    if(sessionError){ throw sessionError; }
-    if(!sessionData?.session){
-      throw new Error('Not authenticated. Please sign in first.');
-    }
-    const { data, error } = await supabaseClient.from('exports').select('*').order('created_at', { ascending: false });
+    const {data:session}=await supabaseClient.auth.getSession();
+    if(!session?.session) throw new Error('Not authenticated');
+    const {data,error}=await supabaseClient.from('exports').select('*').order('created_at',{ascending:false});
     if(error) throw error;
-    renderExports(data || []);
+    renderExports(data||[]);
   }catch(err){
-    console.error('Failed to load exports:', err);
-    alert('Failed to load exports: '+(err.message||err));
+    console.error('Load failed:',err);
+    toast('Failed to load: '+(err.message||err),'#ff4757');
   }
 }
 
 function renderExports(list){
-  document.getElementById('student-area').style.display='block';
-  document.getElementById('empty').style.display='none';
-  const tbody = document.getElementById('trades-tbody'); tbody.innerHTML='';
-  document.getElementById('stu-trade-count').textContent = (list.length||0) + ' exports';
-  list.forEach((row, idx)=>{
-    const payload = row.payload || {};
-    const studentName = row.student_name || payload.name || '';
-    const tradesArr = Array.isArray(payload.trades) ? payload.trades : [];
-    const tradesCount = tradesArr.length;
-    const parsePnl = s => {
-      const str = (s==null? '0' : String(s)).replace(/[+,]/g,'').replace(/[−–]/g,'-').trim();
-      return parseFloat(str) || 0;
-    };
-    const tps = tradesArr.filter(t=> parsePnl(t.pnl) > 0 ).length;
-    const sls = tradesArr.filter(t=> parsePnl(t.pnl) < 0 ).length;
-    const totalPnl = tradesArr.reduce((acc,t)=> acc + parsePnl(t.pnl), 0);
-    const winRate = tradesCount ? Math.round((tps / tradesCount) * 10000) / 100 : 0; // two decimals
-    const fmtPnl = n => (n>0?'+':'') + n.toFixed(2);
+  window.__exports_list=list;
+  const tbody=document.getElementById('exports-tbody');
+  const empty=document.getElementById('empty-state');
+  const wrap=document.getElementById('exports-table-wrap');
+  document.getElementById('exports-count').textContent=list.length+' record'+(list.length!==1?'s':'');
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${new Date(row.created_at).toLocaleString()}</td>
-      <td>${studentName}</td>
-      <td>${tradesCount}</td>
-      <td>${tps}</td>
-      <td>${sls}</td>
-      <td>${fmtPnl(totalPnl)}</td>
-      <td>${winRate}%</td>
-      <td class="small"><button onclick='viewExport(${idx})'>View</button> <button onclick='downloadExport(${idx})'>Download</button></td>
+  if(!list.length){
+    wrap.style.display='none'; empty.style.display='block'; return;
+  }
+  wrap.style.display='block'; empty.style.display='none';
+  tbody.innerHTML='';
+
+  list.forEach((row,idx)=>{
+    const payload=row.payload||{};
+    const name=row.student_name||payload.name||'Unknown';
+    const trades=Array.isArray(payload.trades)?payload.trades:[];
+    const tps=trades.filter(t=>parsePnl(t.pnl)>0).length;
+    const sls=trades.filter(t=>parsePnl(t.pnl)<0).length;
+    const bes=trades.filter(t=>parsePnl(t.pnl)===0).length;
+    const totalPnl=trades.reduce((a,t)=>a+parsePnl(t.pnl),0);
+    const winRate=trades.length?Math.round((tps/trades.length)*10000)/100:0;
+    const config=payload.config||{};
+    const stats=payload.stats||{};
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="color:var(--muted);font-size:12px">${new Date(row.created_at).toLocaleString()}</td>
+      <td>
+        <span class="stu-name-cell"
+          data-idx="${idx}"
+          onmouseenter="showNameTooltip(event,${idx})"
+          onmouseleave="hideTooltip()"
+          onclick="event.stopPropagation();openStudentModal(window.__exports_list[${idx}].payload)">
+          ${name}
+        </span>
+      </td>
+      <td>${trades.length}</td>
+      <td class="pos">${tps}</td>
+      <td class="neg">${sls}</td>
+      <td class="neu">${bes}</td>
+      <td class="${pnlClass(totalPnl)}">${fmtPnl(totalPnl)}</td>
+      <td>${winRate.toFixed(1)}%</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-sm" onclick="event.stopPropagation();openStudentModal(window.__exports_list[${idx}].payload)">View</button>
+          <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();downloadExport(${idx})">↓</button>
+        </div>
+      </td>
     `;
-    tr._rowData = row;
     tbody.appendChild(tr);
   });
-  // store list for view/download
-  window.__exports_list = list;
 }
 
-function viewExport(i){
-  const list = window.__exports_list||[]; if(!list[i]) return;
-  const row = list[i];
-  const d = row.payload;
+/* ═══════════════════════════════════════
+   NAME TOOLTIP
+═══════════════════════════════════════ */
+function showNameTooltip(event, idx){
+  const list=window.__exports_list||[];
+  if(!list[idx]) return;
+  const row=list[idx];
+  const payload=row.payload||{};
+  const trades=Array.isArray(payload.trades)?payload.trades:[];
+  const config=payload.config||{};
+  const tps=trades.filter(t=>parsePnl(t.pnl)>0).length;
+  const totalPnl=trades.reduce((a,t)=>a+parsePnl(t.pnl),0);
+  const winRate=trades.length?Math.round((tps/trades.length)*10000)/100:0;
+
+  const tip=document.getElementById('info-tooltip');
+  tip.innerHTML=`
+    <div class="info-tooltip-title">${payload.name||'Unknown'}</div>
+    <div class="info-tooltip-row"><span class="lbl">Trades</span><span class="val">${trades.length}</span></div>
+    <div class="info-tooltip-row"><span class="lbl">Total P&L</span><span class="val ${pnlClass(totalPnl)}">${fmtPnl(totalPnl)}</span></div>
+    <div class="info-tooltip-row"><span class="lbl">Win Rate</span><span class="val">${winRate.toFixed(1)}%</span></div>
+    ${config.accountSize?`<div class="info-tooltip-row"><span class="lbl">Account</span><span class="val">$${Number(config.accountSize).toFixed(0)}</span></div>`:''}
+    <div class="info-tooltip-row"><span class="lbl">Submitted</span><span class="val">${new Date(row.created_at).toLocaleDateString()}</span></div>
+  `;
+
+  // Position near cursor
+  const rect=event.currentTarget.getBoundingClientRect();
+  tip.style.left=(rect.left)+'px';
+  tip.style.top=(rect.bottom+8)+'px';
+
+  // Keep inside viewport
+  requestAnimationFrame(()=>{
+    const tipRect=tip.getBoundingClientRect();
+    if(tipRect.right>window.innerWidth-12){
+      tip.style.left=(window.innerWidth-tipRect.width-12)+'px';
+    }
+  });
+
+  tip.classList.add('visible');
+}
+
+function hideTooltip(){
+  document.getElementById('info-tooltip').classList.remove('visible');
+}
+
+/* ═══════════════════════════════════════
+   STUDENT MODAL
+═══════════════════════════════════════ */
+function openStudentModal(d){
   if(!d) return;
-  renderStudent(d);
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+  const modal=document.getElementById('student-modal');
+  const trades=Array.isArray(d.trades)?d.trades:[];
+  const config=d.config||{};
+  const stats=d.stats||{};
 
-function downloadExport(i){
-  const list = window.__exports_list||[]; if(!list[i]) return;
-  const row = list[i];
-  const name = (row.student_name||'student') + '_' + new Date(row.created_at).toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
-  const blob = new Blob([JSON.stringify(row.payload,null,2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
-}
-function renderStudent(d){
-  document.getElementById('student-area').style.display='block';
-  document.getElementById('empty').style.display='none';
-  document.getElementById('stu-name').textContent = d.name || 'Unknown';
-  document.getElementById('stu-generatedAt').textContent = d.generatedAt || 'N/A';
-  const cfgEl = document.getElementById('stu-config');
-  cfgEl.textContent = JSON.stringify(d.config||{}, null, 2);
-  document.getElementById('stu-account').textContent = (d.config && d.config.accountSize) ? '$'+Number(d.config.accountSize).toFixed(2) : '$0';
+  // Header
+  document.getElementById('sm-name').textContent=d.name||'Unknown';
+  document.getElementById('sm-meta').textContent=d.generatedAt?'Generated: '+new Date(d.generatedAt).toLocaleString():'';
 
-  // Render stats
-  const stats = d.stats || {};
-  const statsGrid = document.getElementById('stu-stats');
-  statsGrid.innerHTML='';
+  // Metrics
+  const totalPnl=trades.reduce((a,t)=>a+parsePnl(t.pnl),0);
+  const tps=trades.filter(t=>parsePnl(t.pnl)>0).length;
+  const winRate=trades.length?Math.round((tps/trades.length)*10000)/100:0;
+  document.getElementById('sm-metrics').innerHTML=`
+    <div class="metric-card">
+      <div class="metric-label">Account Size</div>
+      <div class="metric-value">${config.accountSize?'$'+Number(config.accountSize).toFixed(0):'—'}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total P&L</div>
+      <div class="metric-value ${pnlClass(totalPnl)}">${fmtPnl(totalPnl)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Win Rate</div>
+      <div class="metric-value">${winRate.toFixed(1)}%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Trades</div>
+      <div class="metric-value">${trades.length}</div>
+    </div>
+  `;
+
+  // Config
+  const configEl=document.getElementById('sm-config');
+  let cfgHTML='';
+  Object.entries(config).forEach(([k,v])=>{
+    cfgHTML+=`<div class="config-item"><div class="config-label">${k}</div><div class="config-value">${v!=null?v:'—'}</div></div>`;
+  });
+  configEl.innerHTML=cfgHTML||'<div style="color:var(--muted);font-size:12px">No config data</div>';
+
+  // Stats
+  const statsEl=document.getElementById('sm-stats');
+  statsEl.innerHTML='';
   Object.entries(stats).forEach(([k,v])=>{
-    const el = document.createElement('div'); el.className='stat';
-    el.innerHTML = `<div class="small">${k}</div><div style="font-family:Syne;font-weight:700;margin-top:6px">${v}</div>`;
-    statsGrid.appendChild(el);
+    const el=document.createElement('div'); el.className='stat';
+    el.innerHTML=`<div class="slbl">${k}</div><div class="sval">${v}</div>`;
+    statsEl.appendChild(el);
   });
+  if(!Object.keys(stats).length) statsEl.innerHTML='<div style="color:var(--muted);font-size:12px">No stats</div>';
 
-  // Render trades
-  const trades = Array.isArray(d.trades)?d.trades:[];
-  document.getElementById('stu-trade-count').textContent = trades.length + ' trades';
-  const tbody = document.getElementById('trades-tbody'); tbody.innerHTML='';
-  trades.forEach((t,idx)=>{
-    const tr = document.createElement('tr');
-    const notes = [t.entryReason||'', t.exitReason||'', t.mistakes||'', t.lessons||''].filter(Boolean).join('\n---\n');
-    tr.innerHTML = `
-      <td>${t.date||''}</td>
-      <td>${t.asset||''}</td>
-      <td>${t.entry||''}</td>
-      <td>${t.exit||''}</td>
-      <td>${t.pnl!=null?t.pnl:''}</td>
-      <td>${t.result||''}</td>
-      <td class="small">${(notes.length>100)?notes.slice(0,100)+'...':notes}</td>
-    `;
-    tr.style.cursor='pointer';
-    tr.onclick = ()=>{
-      document.getElementById('details-card').style.display='block';
-      document.getElementById('entry-details').textContent = 
-        'Asset: '+(t.asset||'')+'\nDate: '+(t.date||'')+' '+(t.time||'')+'\nP&L: '+(t.pnl!=null?t.pnl:'')+'\n\nEntry Reason:\n'+(t.entryReason||'')+'\n\nExit Reason:\n'+(t.exitReason||'')+'\n\nMistakes:\n'+(t.mistakes||'')+'\n\nLessons:\n'+(t.lessons||'');
-      window.scrollTo({top:document.getElementById('details-card').offsetTop-20,behavior:'smooth'});
-    };
-    tbody.appendChild(tr);
-  });
+  // Trade count
+  document.getElementById('sm-trade-count').textContent='— '+trades.length+' trades';
+
+  // Trades
+  const tbody=document.getElementById('sm-trades-tbody');
+  tbody.innerHTML='';
+  if(!trades.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No trades recorded</td></tr>';
+  } else {
+    trades.forEach(t=>{
+      const pnlVal=parsePnl(t.pnl);
+      const notes=[t.entryReason||'',t.exitReason||'',t.mistakes||'',t.lessons||''].filter(Boolean).join(' / ');
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${t.date||'—'}</td>
+        <td style="font-weight:600">${t.asset||'—'}</td>
+        <td>${t.entry||'—'}</td>
+        <td>${t.exit||'—'}</td>
+        <td class="${pnlClass(pnlVal)}">${t.pnl!=null?t.pnl:'—'}</td>
+        <td>${t.result||'—'}</td>
+        <td style="color:var(--muted);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${notes.slice(0,80)||'—'}</td>
+      `;
+      tr.style.cursor='pointer';
+      tr.title='Click to see full details';
+      tr.onclick=()=>openTradeModal(t);
+      tbody.appendChild(tr);
+    });
+  }
+
+  modal.classList.add('open');
+  document.body.style.overflow='hidden';
 }
-// Accept student exports via postMessage
-window.addEventListener('message', function(e){
+
+function closeStudentModal(){
+  document.getElementById('student-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+/* ═══════════════════════════════════════
+   TRADE DETAIL MODAL
+═══════════════════════════════════════ */
+function openTradeModal(t){
+  const pnlVal=parsePnl(t.pnl);
+  const body=document.getElementById('trade-modal-body');
+  body.innerHTML=`
+    <div class="detail-row">
+      <div class="detail-chip">
+        <div class="dlbl">Asset</div>
+        <div class="dval">${t.asset||'—'}</div>
+      </div>
+      <div class="detail-chip">
+        <div class="dlbl">Date</div>
+        <div class="dval">${t.date||'—'} ${t.time||''}</div>
+      </div>
+      <div class="detail-chip">
+        <div class="dlbl">Result</div>
+        <div class="dval">${t.result||'—'}</div>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-chip">
+        <div class="dlbl">Entry</div>
+        <div class="dval">${t.entry||'—'}</div>
+      </div>
+      <div class="detail-chip">
+        <div class="dlbl">Exit</div>
+        <div class="dval">${t.exit||'—'}</div>
+      </div>
+      <div class="detail-chip">
+        <div class="dlbl">P&L</div>
+        <div class="dval ${pnlClass(pnlVal)}">${t.pnl!=null?t.pnl:'—'}</div>
+      </div>
+    </div>
+    ${t.entryReason?`<div class="detail-note"><div class="nlbl">Entry Reason</div><div class="ntxt">${t.entryReason}</div></div>`:''}
+    ${t.exitReason?`<div class="detail-note"><div class="nlbl">Exit Reason</div><div class="ntxt">${t.exitReason}</div></div>`:''}
+    ${t.mistakes?`<div class="detail-note" style="border-color:rgba(255,71,87,0.15);background:rgba(255,71,87,0.04)"><div class="nlbl" style="color:var(--red)">Mistakes</div><div class="ntxt">${t.mistakes}</div></div>`:''}
+    ${t.lessons?`<div class="detail-note" style="border-color:rgba(0,230,118,0.15);background:rgba(0,230,118,0.04)"><div class="nlbl" style="color:var(--green)">Lessons</div><div class="ntxt">${t.lessons}</div></div>`:''}
+  `;
+  document.getElementById('trade-modal').classList.add('open');
+}
+
+function closeTradeModal(){
+  document.getElementById('trade-modal').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════
+   KEYBOARD
+═══════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('trade-modal').classList.contains('open')) closeTradeModal();
+    else closeStudentModal();
+  }
+});
+
+/* ═══════════════════════════════════════
+   DOWNLOAD / RESET / CLEAR
+═══════════════════════════════════════ */
+function downloadExport(i){
+  const list=window.__exports_list||[]; if(!list[i]) return;
+  const row=list[i];
+  const name=(row.student_name||'student')+'_'+new Date(row.created_at).toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';
+  const blob=new Blob([JSON.stringify(row.payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+
+function clearLocalData(){
+  if(!confirm('Clear all local/session data?')) return;
+  clearPendingExports(); updatePendingBadge();
+  window.__exports_list=[];
+  document.getElementById('exports-tbody').innerHTML='';
+  document.getElementById('empty-state').style.display='block';
+  document.getElementById('exports-table-wrap').style.display='none';
+  closeStudentModal(); closeTradeModal();
+  toast('Local data cleared');
+}
+
+async function resetAllData(){
+  if(!confirm('Delete ALL student data (local + Supabase)? Cannot be undone.')) return;
   try{
-    const msg = e.data;
-    if(!msg || msg.type!=='student_export') return;
-    // Queue payload in sessionStorage; do NOT auto-render until admin logs in
-    const pending = getPendingExports();
+    toast('Resetting...','#ffd700');
+    const {data:rows,error:selErr}=await supabaseClient.from('exports').select('id');
+    if(selErr) throw selErr;
+    const ids=(rows||[]).map(r=>r.id).filter(Boolean);
+    if(ids.length){
+      const {error:delErr}=await supabaseClient.from('exports').delete().in('id',ids);
+      if(delErr) throw delErr;
+    }
+    clearPendingExports(); updatePendingBadge();
+    window.__exports_list=[];
+    document.getElementById('exports-tbody').innerHTML='';
+    document.getElementById('empty-state').style.display='block';
+    document.getElementById('exports-table-wrap').style.display='none';
+    document.getElementById('exports-count').textContent='0 records';
+    closeStudentModal(); closeTradeModal();
+    toast('All data removed');
+  }catch(err){
+    alert('Reset failed: '+(err.message||err));
+  }
+}
+
+/* ═══════════════════════════════════════
+   POSTMESSAGE (student app → admin)
+═══════════════════════════════════════ */
+window.addEventListener('message',function(e){
+  try{
+    const msg=e.data;
+    if(!msg||msg.type!=='student_export') return;
+    const pending=getPendingExports();
     pending.push(msg.payload);
     setPendingExports(pending);
     updatePendingBadge();
-    // send ack back to sender
-    try{ e.source.postMessage({type:'student_export_ack'}, e.origin); }catch(err){}
-  }catch(err){
-    // ignore
-  }
-}, false);
-
-// init pending badge on load
-updatePendingBadge();
+    try{e.source.postMessage({type:'student_export_ack'},e.origin)}catch{}
+  }catch{}
+},false);
 </script>
 </body>
 </html>
